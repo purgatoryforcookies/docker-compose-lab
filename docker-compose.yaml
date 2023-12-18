@@ -1,0 +1,31 @@
+version: "3.4"
+
+# Healthcheck interval and retries need to allow 
+# service1 to become healthy on startup
+# otherwise the stack will fail to start
+
+services:
+  service1:
+    container_name: service1
+    build: ./service1
+    ports:
+      - 8080:3050
+    restart: always
+    healthcheck:
+      # test: curl --fail http://localhost:3050/health || exit 1
+      test: 'bash ./healthcheck.sh http://localhost:3050/health'
+      interval: 2s
+      timeout: 2s
+      retries: 5
+    environment:
+      PORT: 3050
+      TIMEOUT: 7
+
+  service2:
+    depends_on:
+      service1:
+        condition: service_healthy
+    environment:
+      SERVICE1_URL: http://service1:3050/health
+    container_name: service2
+    build: ./service2
